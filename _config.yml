@@ -1,5 +1,9 @@
 theme: minima
-title: Test github page
+title: Test blog page
 author: b schouteten
 
-description: Add description here
+description: Blog about the journey to get verilog simulations going with verilator
+
+email: b_schouteten@hotmail.com
+github_username: bschouteten
+linkedin_username: https://www.linkedin.com/in/bjornschouteten/

@@ -1,12 +1,6 @@
 ---
-title: Welcome to my blog
+title: Welcome to this blog
 ---
 
-# Heading 1
-## Heading 2
+*The journey on how to get a complete system verilog SoC simulation running with verilator*
 
-```c++ 
-if(test == 1)
-{
-}
-```
