@@ -22,8 +22,6 @@ Hmmm... How can we solve this. We know that we only need to evaluate the design 
 
 To control some sort of timing, it's helpfull to have one instance which will control the timing. From this main instance we can then control one or multiple clocks, let's call this our clock manager. This clock manager will then control the "time" within our simulation context, but also control all the clocks in the design. Every clock is basically the same, it has a low and high period which will be used indefinitely, our testbench then needs to drive the corresponding pin with the right period. With this knowledge we can extend our current general testbench to simulate clocks, see the new UML diagram.
 
-<Add UML diagram>
-
 ## Simulation time
 
 As visible within our UML diagram, the clockmanager keeps track of the time with the simtime_t object. The cSimtime_t class is designed to be a single class which has all the knowledge on how to convert timings. So anyone who uses this class can call any of the helper functions to get the expected value without having to do any conversions. 
