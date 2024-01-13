@@ -7,5 +7,7 @@ description: Blog about the journey to get simulations going with verilator
 email: b_schouteten@hotmail.com
 github_username: bschouteten
 
+future: true
+
 minima:
   skin: auto
