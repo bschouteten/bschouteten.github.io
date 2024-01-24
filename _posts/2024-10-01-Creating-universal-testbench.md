@@ -6,7 +6,7 @@ author: bschouteten
 
 # Creating a universal test bench
 
-Welcome to the second part of this blog. In the previous part we installed verilator and compiled our system verilog code in C++. Next to this we created a top level testbench and made our clock tick 20 times, which in the end was also visible in GTK wave. 
+Welcome to the second part of this blog. In the previous part we installed verilator and compiled our system Verilog code in C++. Next to this we created a top level testbench and made our clock tick 20 times, which in the end was also visible in GTK wave. 
 
 For this part we will continue with our previous design, but expand it in such way that we can re-use it as much as possible between multiple designs. For this we will use C++ inheritance, so creating a base class for a general testbench and then use a design specific class which derives the base class. Next to this we will also add some general usefull features to make our life easier. First some configurable logging which we can use to printout information into our terminal. Secondly some program options so that we can configure/enable certain parts of the code, think like enabling/disabling the trace.
 
@@ -219,8 +219,7 @@ As first the class is a template class, so that it can handle all the different 
 The constructor and destructor are used to create the class but also to destroy it appropriately. It will start the trace according to the passed parameter, where the destructor will gracefully shutdown the trace and cleanup the core of the simulation context. As we look closely this is the same code from our previous main routine, where the constructor replaces the initial instantation of the verilated context. The destructor replaces the last few lines of our previous main routine.
 
 ``` C++
-template <class VM>
-cTestBench<VM>::cTestBench(VerilatedContext* context, bool traceActive) :
+cTestBench(VerilatedContext* context, bool traceActive) :
     _context(context),
     _finished(false),
     _traceActive(traceActive)
@@ -231,10 +230,10 @@ cTestBench<VM>::cTestBench(VerilatedContext* context, bool traceActive) :
     }
 
     _core = new VM; // Create a new verilator model
+    _trace = nullptr;
 }
 
-template <class VM>
-cTestBench<VM>::~cTestBench(void)
+~cTestBench(void)
 {
     // Always close the trace, even if it is not activated
     closeTrace();
@@ -250,8 +249,7 @@ cTestBench<VM>::~cTestBench(void)
 Tracing can be initially configured by the constructor, where it enables the global tracing within the verilated context. However to function properly a trace has to be opened first, which is done by the openTrace function. A file name and location is passed into this and the trace is then stored in this file. This is also the same as in our previous main routine, just placed within the base class of a universal testbench. The close trace function will close the trace, as done in our main routine. But next to this we now also flush it, to make sure everything is written to it. 
 
 ``` C++
-template <class VM>
-void cTestBench<VM>::opentrace(const char *fileName) 
+void opentrace(const char *fileName) 
 {
     if(_traceActive)
     {
@@ -268,8 +266,7 @@ void cTestBench<VM>::opentrace(const char *fileName)
     }
 }
 
-template <class VM>
-void cTestBench<VM>::closeTrace(void) 
+void closeTrace(void) 
 {
     if (_trace) 
     {
@@ -281,19 +278,17 @@ void cTestBench<VM>::closeTrace(void)
 
 ```
 
-## Controlling the testbench
+# Controlling the testbench
 
-Now the last part for our generic testbench, we need to tick, evaluate and check if the testbench has finished. Let's first start with explaining the finish and finished function. With the finish function, the _finished flag is set to true, this doesn't stop the simulation, however it gives a general function to let the testbench know it has to stop. Where the finished function returns a boolean, the value of this boolean is determined by the _finished flag and next to this by the _context-gotFinish() function. This function checks if a system verilog ``` $finish() ``` statement is triggered. Any derived class should use this finised function to see if the simulation has ended. 
+Now the last part for our generic testbench, we need to tick, evaluate and check if the testbench has finished. Let's first start with explaining the finish and finished function. With the finish function, the _finished flag is set to true, this doesn't stop the simulation, however it gives a general function to let the testbench know it has to stop. Where the finished function returns a boolean, the value of this boolean is determined by the _finished flag and next to this by the _context-gotFinish() function. This function checks if a system Verilog ``` $finish() ``` statement is triggered. Any derived class should use this finised function to see if the simulation has ended. 
 
 ``` C++
-template <class VM>
-void cTestBench<VM>::finish(void)
+void finish(void)
 {
     _finished = true;
 }
 
-template <class VM>
-bool cTestBench<VM>::finished(void) const
+bool finished(void) const
 {
     return (_context->gotFinish() | _finished);
 }
@@ -302,25 +297,24 @@ bool cTestBench<VM>::finished(void) const
 The tick function is to evaluate the design and if configured dump the related information into the trace. For now it doesn't do much more, since there is no more logic needed. However later on we will extend it to also advance the clocks in the design.
 
 ``` C++
-    template <class VM>
-    void cTestBench<VM>::tick(int tickCount) const
+void tick(int tickCount) const
+{
+#ifdef DBG_TESTBENCH_H
+    DEBUG << "TESTBENCH_H - tick()" << std::endl;
+#endif
+
+    //eval logic
+    _core->eval();
+
+    //dump trace
+    if (_traceActive && _trace)
     {
-    #ifdef DBG_TESTBENCH_H
-        DEBUG << "TESTBENCH_H - tick()" << std::endl;
-    #endif
-
-        //eval logic
-        _core->eval();
-
-        //dump trace
-        if (_traceActive && _trace)
-        {
-            _trace->dump( tickCount );
-        } 
-    }
+        _trace->dump( tickCount );
+    } 
+}
 ```
 
-# UART16550 testbench class
+## UART16550 testbench class
 
 We now have a general testbench class, however we still need to have a specific class for our UART16550 module. So let's construct this module and then proceed to run the simulation. This module inherits the general testbench and has one function run, which will run the testbench for the given number of cycles. For now this is sufficient to see if our general testbench class is doing what we expect.
 
@@ -363,7 +357,7 @@ int cAPBUart16550TestBench::run(int numCycles)
 
 ```
 
-# New main file
+## New main file
 
 Since there are quite some updated, our main file also has to be updated to respect the changes and additions we have made. See below for the complete main.c file.
 
@@ -509,4 +503,4 @@ Running the main routine with the log level set to ```DEBUG``` and compiled with
 
 ```
 
-We now are at the same point as our previous blog, except that we have a universal testbench and can re-use this. So if we have a different system verilog design, it would be very easy to adjust the current files to support it fully. In the next blog we will go into generating a universal clocking mechanism, where we add support for multi clock designs and make sure those alternate in the desired frequency. Next to this we will also look into how we sync and run everything on a event base.
+We now are at the same point as our previous blog, except that we have a universal testbench and can re-use this. So if we have a different system Verilog design, it would be very easy to adjust the current files to support it fully. In the next blog we will go into generating a universal clocking mechanism, where we add support for multi clock designs and make sure those alternate in the desired frequency. Next to this we will also look into how we sync and run everything on a event base.
