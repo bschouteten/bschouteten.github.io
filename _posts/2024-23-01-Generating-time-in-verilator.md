@@ -372,7 +372,7 @@ void tick(int tickCount) const
 }
 ```
 
-As we can see for our ```trace->dump()``` function we pass the time from our clock manager in pico seconds. Where this is perfectly fine as long as our simulation is running in pico seconds, it will not work when our simulation runs in nano seconds. In the latter case 1ns in simulation time shows up as 1ps in the waveform. To solve this problem we will need to match the simulation time with the waveform. Happily we can get the settings from our Verilated context by the function ``` timeprecision () ```. It returns the prevision back in a negative factor of 10, so it returns 12 for pico seconds and 9 for nano seconds. With this knowledge we can calculate the time precision  in the following way ```_timeprecision  = pow(10, 0 - context->time precision ());```. The calculated precision can then be used to map the simulation time with the waveform time, which is done by getting the simulation time in seconds and this divided by the time precision . Within our code we add the ```_timeprecision ``` as a private variable and perform the calculation in the constructor, since it won't change anymore after that. Our tick function is now updated with the following code, which will calculate the right time.
+As we can see for our ```trace->dump()``` function we pass the time from our clock manager in pico seconds. Where this is perfectly fine as long as our simulation is running in pico seconds, it will not work when our simulation runs in nano seconds. In the latter case 1ns in simulation time shows up as 1ps in the waveform. To solve this problem we will need to match the simulation time with the waveform. Happily we can get the settings from our Verilated context by the function ``` timeprecision () ```. It returns the prevision back in a negative factor of 10, so it returns 12 for pico seconds and 9 for nano seconds. With this knowledge we can calculate the time precision  in the following way ```_timeprecision  = pow(10, 0 - context->timeprecision ());```. The calculated precision can then be used to map the simulation time with the waveform time, which is done by getting the simulation time in seconds and this divided by the time precision . Within our code we add the ```_timeprecision ``` as a private variable and perform the calculation in the constructor, since it won't change anymore after that. Our tick function is now updated with the following code, which will calculate the right time.
 
 ``` c++
 simtime_t time = _clkMgr->getTime();
@@ -615,10 +615,10 @@ cTestBench(VerilatedContext* context, bool traceActive) :
         Verilated::traceEverOn(true);
     }
 
-    _time precision  = pow(10, 0 - context->time precision ());
+    _timeprecision  = pow(10, 0 - context->time precision ());
 
     _core = new VM; // Create a new verilator model
-    _clkMgr = new cClockManager(_time precision ); //Create new Clock Manager
+    _clkMgr = new cClockManager(_timeprecision ); //Create new Clock Manager
     _trace = nullptr;
 }
 ```
@@ -728,4 +728,4 @@ Interesting part in our trace was at loopcounter 6, where we now nicely see that
 
 ![Right clocks](/images/blog3/3ClocksRight.png)
 
-As we can see in our waveform the clocks are now changing state at the right moment as we expect them to change. We now have introduced timing within our cycle based simulator and according this timing/clocking we can now start generating other signals. This will then also be the next part of this series, generating AHB bus signals.
+As we can see in our waveform the clocks are now changing state at the right moment as we expect them to change. We now have introduced timing within our cycle based simulator and according this timing/clocking we can now start generating other signals. This will then also be the next part of this series, generating reset and APB signals.
