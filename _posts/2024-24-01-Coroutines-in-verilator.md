@@ -1,10 +1,10 @@
 ---
-title: Generating signals
+title: Coroutines in verilator
 date: 2024-01-24
 author: bschouteten
 ---
 
-# Generating signals within Verilator
+# Coroutines in Verilator
 
 In the previous blog we introduced clock signals into our testbench. We looked into creating a single clock but also misused our design to create multiple clocks. With the fact that Verilator is a cycle based simulator we can now add stimulus to our design according to our clock. Due to the fact that our designs are synchronous, it's possible to connect the stimulus to our clock signal.
 
@@ -161,11 +161,11 @@ uint32_t cAPBUart16550TestBench::APBRead(uint32_t address)
 
 ```
 
-Alright so with this function we should now be able to read from our design through the APB bus, however it's now very difficult to control the clocking of all the functions. This is becoming a drawback in this way, also the state machine is not very nice. For now it's not to difficult to understand and to use, however if we get more and more difficult designs  it's going to be a nightmare. Also sending multiple signals to our design is impossible, we can only read from the APB and no other signals can be read or controlled. To support this we need to extend our APB read, making it more and more complex. Thinking ahead it seems that this approach is not really working properly, so let's think what our solution could be.
+Alright so with this function we should now be able to read from our design through the APB bus, however it's now very difficult to control the clocking of all the functions. This is becoming a drawback in this way, also the state machine is not very nice. For now it's not to difficult to understand and to use, however if we get more and more difficult designs it's going to be a nightmare. Also sending multiple signals to our design is impossible, we can only read from the APB and no other signals can be read or controlled. To support this we need to extend our APB read, making it more and more complex. Thinking ahead it seems that this approach is not really working properly, so let's think what our solution could be.
 
 # Coroutines
 
-As we identified previously it's difficult to control multiple signals simultaneously. In system Verilog many things can run in parallel, due that everything is clocked and handles according to this clock. In our general testbench we also have a very nice clock, so it would be very cool if we could mimic this parallelization in our testbench. Well it's mentioned earlier, threads. Using threads would be an option, creating a small thread for certain functionality and kill the thread when it ends. This would suit our APB read task in system Verilog very well, however in large designs we would then need to create and control many threads. That's not really what we want, making our design way to complex and difficult to handle. However the threading idea is not so bad, preferred a small subroutine which could be paused and continued on a clock edge or on finishing a action. C++ 20 has introduced something like this, coroutines. A coroutine can be described as "functions whose execution you can pause", this means we can write the functions almost the same as in system Verilog.
+As we identified previously it's difficult to control multiple signals simultaneously. In system Verilog many things can run in parallel, due that everything is clocked and handled according to this clock. In our general testbench we also have a very nice clock, so it would be very cool if we could mimic this parallelization in our testbench. Well it's mentioned earlier, threads. Using threads would be an option, creating a small thread for certain functionality and kill the thread when it ends. This would suit our APB read task in system Verilog very well, however in large designs we would then need to create and control many threads. That's not really what we want, making our design way to complex and difficult to handle. However the threading idea is not so bad, preferred a small subroutine which could be paused and continued on a clock edge or on finishing a action. C++ 20 has introduced something like this, coroutines. A coroutine can be described as "functions whose execution you can pause", this means we can write the functions almost the same as in system Verilog.
 
 Let's take an example before we start to go deeper into subroutines. As we look into the function below, we can setup the signals just as in system Verilog. The execution of this function is stopped and it waits on a event of the clock before it continues execution. This is exactly how it works in system Verilog, so this would suit our testbench perfectly. Let's go and dig deeper into this and implement it properly.
 
@@ -191,3 +191,4 @@ uint32_t read(uint32_t address)
 ```
 
 ## Coroutines how does it work
+
