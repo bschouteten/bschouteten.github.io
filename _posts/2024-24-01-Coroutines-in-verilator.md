@@ -268,21 +268,21 @@ struct sCoRoutineHandler
 
 As we can see in the code example above, the ```promise_type``` is encapsulated within the structure of the ```sCoRoutineHandler```. By doing this we can create functions which can communicate with our coroutine, which is helpfull afterwards but for now mainly helps understanding the sequence of events. Our main routine is still the same, so let's run the example and see our log:
 
-[INFO] Get coroutine return object
-[INFO] Constructing coroutine
-[INFO] Initial suspend
-[INFO] Coroutine function start
-[INFO] Return void
-[INFO] Final suspend
-[INFO] Destructor coroutine
+[INFO] Get coroutine return object \
+[INFO] Constructing coroutine \
+[INFO] Initial suspend \
+[INFO] Coroutine function start \
+[INFO] Return void \
+[INFO] Final suspend \
+[INFO] Destructor coroutine \
 
 At first the function ```get_return_object``` is called, this will return the newly allocated heap memory object for the coroutine. Following this the constructor is called, with as parameter a handle to the coroutine itself, which we store in our structure, giving us access to the coroutine. The object is now created and ```initial_suspend``` is called, in our current design it returns ```suspend_never``` which means that our cororoutine function is executed until a ```co_await```, ```co_yield``` or ```co_return``` is used. The other case would be to return ```suspend_always```, suspending the coroutine function immediately. As we noted just before, after the initial suspend with ```suspend_never``` the coroutine function itself is called, visible by the coroutine function start statement. Since our function immediately returns with the ```co_return``` statement, it directly goes to the ```void return_void``` function, which is mandatory to have, without it's possible to have undefined behaviour. The last call of the coroutine goes to ```final_suspend```, this is the function for cleaning up the coroutine. In this example it has ```suspend_never``` as return parameter, the object is then automatically destroyed, where the state is not accessible anymore. Calling the coroutine after this point will lead into a segmentation fault. When the object's state has to be accessible after the coroutine finishes ```suspend_always``` must be used a return parameter. 
 
 Let's update ```initial_suspend``` and change the return parameter to ```suspend_always``` and re-run our example code. Since the coroutine is directly stopped we would expect that we don't see the coroutine function start and the corresponding function calls to close of the coroutine. Which indeed is true as we can see in the log:
-[INFO] Get coroutine return object
-[INFO] Constructing coroutine
-[INFO] Initial suspend
-[INFO] Destructor coroutine
+[INFO] Get coroutine return object\
+[INFO] Constructing coroutine\
+[INFO] Initial suspend\
+[INFO] Destructor coroutine\
 
 Almost all function have now been explained and checked in which order they are called and executed, except the ```unhandled_exception```. Which is only called when an exception occurs within the context of a coroutine. So if the execution of the coroutine fails it will be called and the exception can stored/handled as by used wishes. It must be noted that using the coroutine after this can result in undefined behaviour and should be checked very carefully.
 
@@ -316,14 +316,14 @@ INFO << "Coroutine return value: " << myTask.getReturnValue() << '\n';
 ```
 
 As we run with the following code the following trace will be visible:
-[INFO] Get coroutine return object
-[INFO] Constructing coroutine
-[INFO] Initial suspend
-[INFO] Coroutine function start
-[INFO] Return value
-[INFO] Final suspend
-[INFO] Coroutine return value: 5
-[INFO] Destructor coroutine
+[INFO] Get coroutine return object\
+[INFO] Constructing coroutine\
+[INFO] Initial suspend\
+[INFO] Coroutine function start\
+[INFO] Return value\
+[INFO] Final suspend\
+[INFO] Coroutine return value: 5\
+[INFO] Destructor coroutine\
 
 Visible here is that the return void is now replaced with return value and that we get the value from our coroutine and print it out. Do note that this must happen before the handler of the coroutine is destroyed.
 
@@ -371,19 +371,19 @@ int main(int argc, char** argv)
 Running this function we would expect that our coroutine is started and then yields with the value of 1, where our main routine takes over and prints the value of the first yield. Following this the coroutine is resumed again and it will suspend with the value of 2. At last main takes over again and prints out the value, resuming the coroutine for the last time and printing the return value. This is also our first example which shows the power and especially the readines of a coroutine.
 
 Trace of the simple co_yield example:
-[INFO] Get coroutine return object
-[INFO] Constructing coroutine
-[INFO] Initial suspend
-[INFO] Coroutine function start
-[INFO] Yield value 1
-[INFO] Coroutine suspended with value 1
-[INFO] Coroutine function resumed
-[INFO] Yield value 2
-[INFO] Coroutine suspended with value 2
-[INFO] Return value
-[INFO] Final suspend
-[INFO] Coroutine return value: 5
-[INFO] Destructor coroutine
+[INFO] Get coroutine return object\
+[INFO] Constructing coroutine\
+[INFO] Initial suspend\
+[INFO] Coroutine function start\
+[INFO] Yield value 1\
+[INFO] Coroutine suspended with value 1\
+[INFO] Coroutine function resumed\
+[INFO] Yield value 2\
+[INFO] Coroutine suspended with value 2\
+[INFO] Return value\
+[INFO] Final suspend\
+[INFO] Coroutine return value: 5\
+[INFO] Destructor coroutine\
 
 ## co_await
 
