@@ -442,97 +442,97 @@ pclk = addClock(_core->PENABLE, 10.0_ns);   // 100MHz clock
 
 Hmmm, they all three start nicely as expected. However at 15ns we can see that our 50MHz clock does not go low, let's try to find out why. First enable some of our logging in the clock manager and the individual clocks. Which will output the following trace: 
 
-[DEBUG] CLOCK_H constructor(0) lvl=0 LowPeriod=4ns
-[DEBUG] CLOCK_H constructor(1) lvl=0 LowPeriod=7.5ns
-[DEBUG] CLOCK_H constructor(2) lvl=0 LowPeriod=5ns
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(0) updateTime(4ns)
-[DEBUG] CLOCK_H(1) updateTime(4ns)
-[DEBUG] CLOCK_H(2) updateTime(4ns)
-[DEBUG] Loopcounter: 0
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:3.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:1000ps
-[DEBUG] CLOCK_H(0) updateTime(1000ps)
-[DEBUG] CLOCK_H(1) updateTime(1000ps)
-[DEBUG] CLOCK_H(2) updateTime(1000ps)
-[DEBUG] Loopcounter: 1
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:3ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:2.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(0) updateTime(2.5ns)
-[DEBUG] CLOCK_H(1) updateTime(2.5ns)
-[DEBUG] CLOCK_H(2) updateTime(2.5ns)
-[DEBUG] Loopcounter: 2
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:500ps
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:2.5ns
-[DEBUG] CLOCK_H(0) updateTime(500ps)
-[DEBUG] CLOCK_H(1) updateTime(500ps)
-[DEBUG] CLOCK_H(2) updateTime(500ps)
-[DEBUG] Loopcounter: 3
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:2ns
-[DEBUG] CLOCK_H(0) updateTime(2ns)
-[DEBUG] CLOCK_H(1) updateTime(2ns)
-[DEBUG] CLOCK_H(2) updateTime(2ns)
-[DEBUG] Loopcounter: 4
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:2ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(0) updateTime(2ns)
-[DEBUG] CLOCK_H(1) updateTime(2ns)
-[DEBUG] CLOCK_H(2) updateTime(2ns)
-[DEBUG] Loopcounter: 5
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:3ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:3ns
-[DEBUG] CLOCK_H(0) updateTime(3ns)
-[DEBUG] CLOCK_H(1) updateTime(3ns)
-[DEBUG] CLOCK_H(2) updateTime(3ns)
-[DEBUG] Loopcounter: 6
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:1000ps
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:4.03897e-10as
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(0) updateTime(4.03897e-10as)
-[DEBUG] CLOCK_H(1) updateTime(4.03897e-10as)
-[DEBUG] CLOCK_H(2) updateTime(4.03897e-10as)
-[DEBUG] Loopcounter: 7
-%Warning: previous dump at t=15000, requesting t=15000, dump call ignored
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:1000ps
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(0) updateTime(1000ps)
-[DEBUG] CLOCK_H(1) updateTime(1000ps)
-[DEBUG] CLOCK_H(2) updateTime(1000ps)
-[DEBUG] Loopcounter: 8
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:6.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(0) updateTime(4ns)
-[DEBUG] CLOCK_H(1) updateTime(4ns)
-[DEBUG] CLOCK_H(2) updateTime(4ns)
-[DEBUG] Loopcounter: 9
-[DEBUG] CLOCKMANAGER_H - tick() 
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:2.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:4.03897e-10as
-[DEBUG] CLOCK_H(0) updateTime(4.03897e-10as)
-[DEBUG] CLOCK_H(1) updateTime(4.03897e-10as)
-[DEBUG] CLOCK_H(2) updateTime(4.03897e-10as)
+[DEBUG] CLOCK_H constructor(0) lvl=0 LowPeriod=4ns\
+[DEBUG] CLOCK_H constructor(1) lvl=0 LowPeriod=7.5ns\
+[DEBUG] CLOCK_H constructor(2) lvl=0 LowPeriod=5ns\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(0) updateTime(4ns)\
+[DEBUG] CLOCK_H(1) updateTime(4ns)\
+[DEBUG] CLOCK_H(2) updateTime(4ns)\
+[DEBUG] Loopcounter: 0\
+[DEBUG] CLOCKMANAGER_H - tick() \
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:3.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:1000ps\
+[DEBUG] CLOCK_H(0) updateTime(1000ps)\
+[DEBUG] CLOCK_H(1) updateTime(1000ps)\
+[DEBUG] CLOCK_H(2) updateTime(1000ps)\
+[DEBUG] Loopcounter: 1\
+[DEBUG] CLOCKMANAGER_H - tick() \
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:3ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:2.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(0) updateTime(2.5ns)\
+[DEBUG] CLOCK_H(1) updateTime(2.5ns)\
+[DEBUG] CLOCK_H(2) updateTime(2.5ns)\
+[DEBUG] Loopcounter: 2\
+[DEBUG] CLOCKMANAGER_H - tick() \
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:500ps\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:2.5ns\
+[DEBUG] CLOCK_H(0) updateTime(500ps)\
+[DEBUG] CLOCK_H(1) updateTime(500ps)\
+[DEBUG] CLOCK_H(2) updateTime(500ps)\
+[DEBUG] Loopcounter: 3\
+[DEBUG] CLOCKMANAGER_H - tick() \
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:2ns\
+[DEBUG] CLOCK_H(0) updateTime(2ns)\
+[DEBUG] CLOCK_H(1) updateTime(2ns)\
+[DEBUG] CLOCK_H(2) updateTime(2ns)\
+[DEBUG] Loopcounter: 4\
+[DEBUG] CLOCKMANAGER_H - tick() \
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:2ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(0) updateTime(2ns)\
+[DEBUG] CLOCK_H(1) updateTime(2ns)\
+[DEBUG] CLOCK_H(2) updateTime(2ns)\
+[DEBUG] Loopcounter: 5\
+[DEBUG] CLOCKMANAGER_H - tick() \
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:3ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:3ns\
+[DEBUG] CLOCK_H(0) updateTime(3ns)\
+[DEBUG] CLOCK_H(1) updateTime(3ns)\
+[DEBUG] CLOCK_H(2) updateTime(3ns)\
+[DEBUG] Loopcounter: 6\
+[DEBUG] CLOCKMANAGER_H - tick() \
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:1000ps\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:4.03897e-10as\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(0) updateTime(4.03897e-10as)\
+[DEBUG] CLOCK_H(1) updateTime(4.03897e-10as)\
+[DEBUG] CLOCK_H(2) updateTime(4.03897e-10as)\
+[DEBUG] Loopcounter: 7\
+%Warning: previous dump at t=15000, requesting t=15000, dump call ignored\
+[DEBUG] CLOCKMANAGER_H - tick() \
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:1000ps\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(0) updateTime(1000ps)\
+[DEBUG] CLOCK_H(1) updateTime(1000ps)\
+[DEBUG] CLOCK_H(2) updateTime(1000ps)\
+[DEBUG] Loopcounter: 8\
+[DEBUG] CLOCKMANAGER_H - tick() \
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:6.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(0) updateTime(4ns)\
+[DEBUG] CLOCK_H(1) updateTime(4ns)\
+[DEBUG] CLOCK_H(2) updateTime(4ns)\
+[DEBUG] Loopcounter: 9\
+[DEBUG] CLOCKMANAGER_H - tick() \
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:2.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:4.03897e-10as\
+[DEBUG] CLOCK_H(0) updateTime(4.03897e-10as)\
+[DEBUG] CLOCK_H(1) updateTime(4.03897e-10as)\
+[DEBUG] CLOCK_H(2) updateTime(4.03897e-10as)\
 
 Until loop counter 6 everything seems to go as expected, all clocks count down nicely and get the expected values. However from loop counter 6 we see that the time to next event for 50MHz is 4.03897e-10as, which is 0,0000000000000000000000000000403987 seconds. This is way smaller than our used accuracy of 1ps, it seems that we have rounding error in our calculation. Theoretically it should work but we are working with a PC simulation so it seems we have a rounding error in our system. 
 
@@ -640,89 +640,89 @@ Let's run our design with trace and debug output and see what happens.
 [DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
 [DEBUG] CLOCK_H(1) - getTimeToNextEvent:3.5ns\
 [DEBUG] CLOCK_H(2) - getTimeToNextEvent:1000ps\
-[DEBUG] CLOCK_H(0) updateTime(1000ps)
-[DEBUG] CLOCK_H(1) updateTime(1000ps)
-[DEBUG] CLOCK_H(2) updateTime(1000ps)
-[DEBUG] Loopcounter: 1
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:3ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:2.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(0) updateTime(2.5ns)
-[DEBUG] CLOCK_H(1) updateTime(2.5ns)
-[DEBUG] CLOCK_H(2) updateTime(2.5ns)
-[DEBUG] Loopcounter: 2
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:500ps
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:2.5ns
-[DEBUG] CLOCK_H(0) updateTime(500ps)
-[DEBUG] CLOCK_H(1) updateTime(500ps)
-[DEBUG] CLOCK_H(2) updateTime(500ps)
-[DEBUG] Loopcounter: 3
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:2ns
-[DEBUG] CLOCK_H(0) updateTime(2ns)
-[DEBUG] CLOCK_H(1) updateTime(2ns)
-[DEBUG] CLOCK_H(2) updateTime(2ns)
-[DEBUG] Loopcounter: 4
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:2ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(0) updateTime(2ns)
-[DEBUG] CLOCK_H(1) updateTime(2ns)
-[DEBUG] CLOCK_H(2) updateTime(2ns)
-[DEBUG] Loopcounter: 5
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:3ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:3ns
-[DEBUG] CLOCK_H(0) updateTime(3ns)
-[DEBUG] CLOCK_H(1) updateTime(3ns)
-[DEBUG] CLOCK_H(2) updateTime(3ns)
-[DEBUG] Loopcounter: 6
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:1000ps
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(0) updateTime(1000ps)
-[DEBUG] CLOCK_H(1) updateTime(1000ps)
-[DEBUG] CLOCK_H(2) updateTime(1000ps)
-[DEBUG] Loopcounter: 7
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:6.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(0) updateTime(4ns)
-[DEBUG] CLOCK_H(1) updateTime(4ns)
-[DEBUG] CLOCK_H(2) updateTime(4ns)
-[DEBUG] Loopcounter: 8
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:2.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(0) updateTime(2.5ns)
-[DEBUG] CLOCK_H(1) updateTime(2.5ns)
-[DEBUG] CLOCK_H(2) updateTime(2.5ns)
-[DEBUG] Loopcounter: 9
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:1.5ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:2.5ns
-[DEBUG] CLOCK_H(0) updateTime(1.5ns)
-[DEBUG] CLOCK_H(1) updateTime(1.5ns)
-[DEBUG] CLOCK_H(2) updateTime(1.5ns)
-[DEBUG] Loopcounter: 10
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:6ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:1000ps
-[DEBUG] CLOCK_H(0) updateTime(1000ps)
-[DEBUG] CLOCK_H(1) updateTime(1000ps)
-[DEBUG] CLOCK_H(2) updateTime(1000ps)
+[DEBUG] CLOCK_H(0) updateTime(1000ps)\
+[DEBUG] CLOCK_H(1) updateTime(1000ps)\
+[DEBUG] CLOCK_H(2) updateTime(1000ps)\
+[DEBUG] Loopcounter: 1\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:3ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:2.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(0) updateTime(2.5ns)\
+[DEBUG] CLOCK_H(1) updateTime(2.5ns)\
+[DEBUG] CLOCK_H(2) updateTime(2.5ns)\
+[DEBUG] Loopcounter: 2\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:500ps\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:2.5ns\
+[DEBUG] CLOCK_H(0) updateTime(500ps)\
+[DEBUG] CLOCK_H(1) updateTime(500ps)\
+[DEBUG] CLOCK_H(2) updateTime(500ps)\
+[DEBUG] Loopcounter: 3\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:2ns\
+[DEBUG] CLOCK_H(0) updateTime(2ns)\
+[DEBUG] CLOCK_H(1) updateTime(2ns)\
+[DEBUG] CLOCK_H(2) updateTime(2ns)\
+[DEBUG] Loopcounter: 4\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:2ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(0) updateTime(2ns)\
+[DEBUG] CLOCK_H(1) updateTime(2ns)\
+[DEBUG] CLOCK_H(2) updateTime(2ns)\
+[DEBUG] Loopcounter: 5\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:3ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:3ns\
+[DEBUG] CLOCK_H(0) updateTime(3ns)\
+[DEBUG] CLOCK_H(1) updateTime(3ns)\
+[DEBUG] CLOCK_H(2) updateTime(3ns)\
+[DEBUG] Loopcounter: 6\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:1000ps\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(0) updateTime(1000ps)\
+[DEBUG] CLOCK_H(1) updateTime(1000ps)\
+[DEBUG] CLOCK_H(2) updateTime(1000ps)\
+[DEBUG] Loopcounter: 7\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:6.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(0) updateTime(4ns)\
+[DEBUG] CLOCK_H(1) updateTime(4ns)\
+[DEBUG] CLOCK_H(2) updateTime(4ns)\
+[DEBUG] Loopcounter: 8\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:2.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(0) updateTime(2.5ns)\
+[DEBUG] CLOCK_H(1) updateTime(2.5ns)\
+[DEBUG] CLOCK_H(2) updateTime(2.5ns)\
+[DEBUG] Loopcounter: 9\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:1.5ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:2.5ns\
+[DEBUG] CLOCK_H(0) updateTime(1.5ns)\
+[DEBUG] CLOCK_H(1) updateTime(1.5ns)\
+[DEBUG] CLOCK_H(2) updateTime(1.5ns)\
+[DEBUG] Loopcounter: 10\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:6ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:1000ps\
+[DEBUG] CLOCK_H(0) updateTime(1000ps)\
+[DEBUG] CLOCK_H(1) updateTime(1000ps)\
+[DEBUG] CLOCK_H(2) updateTime(1000ps)\
 
 Interesting part in our trace was at loopcounter 6, where we now nicely see that the very low timing is resolved. Meaning that our clocks now toggle at the expected moments, let's verify this with our tracing. We don't have a warning from verilator, so we expect it to function now.
 

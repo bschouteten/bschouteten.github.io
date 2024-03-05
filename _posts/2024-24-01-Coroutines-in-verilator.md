@@ -274,7 +274,7 @@ As we can see in the code example above, the ```promise_type``` is encapsulated 
 [INFO] Coroutine function start \
 [INFO] Return void \
 [INFO] Final suspend \
-[INFO] Destructor coroutine \
+[INFO] Destructor coroutine
 
 At first the function ```get_return_object``` is called, this will return the newly allocated heap memory object for the coroutine. Following this the constructor is called, with as parameter a handle to the coroutine itself, which we store in our structure, giving us access to the coroutine. The object is now created and ```initial_suspend``` is called, in our current design it returns ```suspend_never``` which means that our cororoutine function is executed until a ```co_await```, ```co_yield``` or ```co_return``` is used. The other case would be to return ```suspend_always```, suspending the coroutine function immediately. As we noted just before, after the initial suspend with ```suspend_never``` the coroutine function itself is called, visible by the coroutine function start statement. Since our function immediately returns with the ```co_return``` statement, it directly goes to the ```void return_void``` function, which is mandatory to have, without it's possible to have undefined behaviour. The last call of the coroutine goes to ```final_suspend```, this is the function for cleaning up the coroutine. In this example it has ```suspend_never``` as return parameter, the object is then automatically destroyed, where the state is not accessible anymore. Calling the coroutine after this point will lead into a segmentation fault. When the object's state has to be accessible after the coroutine finishes ```suspend_always``` must be used a return parameter. 
 
@@ -282,7 +282,7 @@ Let's update ```initial_suspend``` and change the return parameter to ```suspend
 [INFO] Get coroutine return object\
 [INFO] Constructing coroutine\
 [INFO] Initial suspend\
-[INFO] Destructor coroutine\
+[INFO] Destructor coroutine
 
 Almost all function have now been explained and checked in which order they are called and executed, except the ```unhandled_exception```. Which is only called when an exception occurs within the context of a coroutine. So if the execution of the coroutine fails it will be called and the exception can stored/handled as by used wishes. It must be noted that using the coroutine after this can result in undefined behaviour and should be checked very carefully.
 
@@ -323,7 +323,7 @@ As we run with the following code the following trace will be visible:
 [INFO] Return value\
 [INFO] Final suspend\
 [INFO] Coroutine return value: 5\
-[INFO] Destructor coroutine\
+[INFO] Destructor coroutine
 
 Visible here is that the return void is now replaced with return value and that we get the value from our coroutine and print it out. Do note that this must happen before the handler of the coroutine is destroyed.
 
@@ -383,7 +383,7 @@ Trace of the simple co_yield example:
 [INFO] Return value\
 [INFO] Final suspend\
 [INFO] Coroutine return value: 5\
-[INFO] Destructor coroutine\
+[INFO] Destructor coroutine
 
 ## co_await
 
@@ -400,7 +400,7 @@ Trace of the simple co_yield example:
 [INFO] Return value\
 [INFO] Final suspend\
 [INFO] Coroutine return value: 5\
-[INFO] Destructor coroutine\
+[INFO] Destructor coroutine
 
 As we can see in our log, the yield_value function is not called and the value is not set, therefore we now see a value of 0. So the coroutine is just paused without giving any value back. If we now do the same, but instead of ```co_await suspend_always{};``` we use ```co_await suspend_never{}``` we will see that the coroutine is not stopped by the ```co_await``` since it should never suspend. 
 
@@ -416,7 +416,7 @@ When we now run this, a segmentation fault will come up. This comes due that we 
 [INFO] Final suspend\
 [INFO] Coroutine suspended with value 5\
 make[1]: *** [Makefile:78: sim] Segmentation fault\
-make: *** [Makefile:108: verilator] Error 2\
+make: *** [Makefile:108: verilator] Error 2
 
 We have now seen a basic part of the ```co_await``` with the already known awaitable types. However there is more behind the awaitable, let's explore this and see how it works. 
 The awaitable type is about the same as our ```promise_type``` which we have seen previously for our coroutine. Just as the ```promise_type```, the awaitable type is also a special interface just for coroutines. It exists out of three functions, ```await_ready(), await_suspend(coroutine_handle) and await_resume()```.
@@ -494,7 +494,7 @@ As we run this code we will see the following output in our terminal (keep in mi
 [INFO] Return value\
 [INFO] Final suspend\
 [INFO] Coroutine ended\
-[INFO] Destructor coroutine\
+[INFO] Destructor coroutine
 
 As we can see in this log, the coroutine is stopped with the await ready and await suspend function. When at that point the coroutine is resumed again, it goes through the await resume function and then resumes the coroutine itself. Which is exactly as we would expect from the code that we made. The awaitable type is very versatile, but has to be tailored to suit the implementation.
 
