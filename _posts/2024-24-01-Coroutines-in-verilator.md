@@ -389,34 +389,34 @@ Trace of the simple co_yield example:
 
 ```co_await``` is used to suspend execution untill the coroutine is resumed. As parameter it takes a awaitable type, where we already have seen two of those, ```suspend_never``` and ```suspend_always```. Let's try out with those two first and then dive deeper into the awaitables and see what it means. In our function we change ```co_yield 1;``` to ```co_await suspend_always{};```, which will give us the following log:
 
-[INFO] Get coroutine return object
-[INFO] Constructing coroutine
-[INFO] Initial suspend
-[INFO] Coroutine function start
-[INFO] Coroutine suspended with value 0
-[INFO] Coroutine function resumed
-[INFO] Yield value 2
-[INFO] Coroutine suspended with value 2
-[INFO] Return value
-[INFO] Final suspend
-[INFO] Coroutine return value: 5
-[INFO] Destructor coroutine
+[INFO] Get coroutine return object\
+[INFO] Constructing coroutine\
+[INFO] Initial suspend\
+[INFO] Coroutine function start\
+[INFO] Coroutine suspended with value 0\
+[INFO] Coroutine function resumed\
+[INFO] Yield value 2\
+[INFO] Coroutine suspended with value 2\
+[INFO] Return value\
+[INFO] Final suspend\
+[INFO] Coroutine return value: 5\
+[INFO] Destructor coroutine\
 
 As we can see in our log, the yield_value function is not called and the value is not set, therefore we now see a value of 0. So the coroutine is just paused without giving any value back. If we now do the same, but instead of ```co_await suspend_always{};``` we use ```co_await suspend_never{}``` we will see that the coroutine is not stopped by the ```co_await``` since it should never suspend. 
 
 When we now run this, a segmentation fault will come up. This comes due that we delete the coroutine before it has ended, however why would we want to call ```co_await``` when we don't want to suspend, currently there is no reason for this.
-[INFO] Get coroutine return object
-[INFO] Constructing coroutine
-[INFO] Initial suspend
-[INFO] Coroutine function start
-[INFO] Coroutine function resumed
-[INFO] Yield value 2
-[INFO] Coroutine suspended with value 2
-[INFO] Return value
-[INFO] Final suspend
-[INFO] Coroutine suspended with value 5
-make[1]: *** [Makefile:78: sim] Segmentation fault
-make: *** [Makefile:108: verilator] Error 2
+[INFO] Get coroutine return object\
+[INFO] Constructing coroutine\
+[INFO] Initial suspend\
+[INFO] Coroutine function start\
+[INFO] Coroutine function resumed\
+[INFO] Yield value 2\
+[INFO] Coroutine suspended with value 2\
+[INFO] Return value\
+[INFO] Final suspend\
+[INFO] Coroutine suspended with value 5\
+make[1]: *** [Makefile:78: sim] Segmentation fault\
+make: *** [Makefile:108: verilator] Error 2\
 
 We have now seen a basic part of the ```co_await``` with the already known awaitable types. However there is more behind the awaitable, let's explore this and see how it works. 
 The awaitable type is about the same as our ```promise_type``` which we have seen previously for our coroutine. Just as the ```promise_type```, the awaitable type is also a special interface just for coroutines. It exists out of three functions, ```await_ready(), await_suspend(coroutine_handle) and await_resume()```.
@@ -482,19 +482,19 @@ int main(int argc, char** argv)
 
 As we run this code we will see the following output in our terminal (keep in mind that we still have some output in our coroutine itself):
 
-[INFO] Get coroutine return object
-[INFO] Constructing coroutine
-[INFO] Initial suspend
-[INFO] Coroutine function start
-[INFO] Await ready
-[INFO] Await suspend
-[INFO] Resume coroutine
-[INFO] Await resume
-[INFO] Coroutine function resumed
-[INFO] Return value
-[INFO] Final suspend
-[INFO] Coroutine ended
-[INFO] Destructor coroutine
+[INFO] Get coroutine return object\
+[INFO] Constructing coroutine\
+[INFO] Initial suspend\
+[INFO] Coroutine function start\
+[INFO] Await ready\
+[INFO] Await suspend\
+[INFO] Resume coroutine\
+[INFO] Await resume\
+[INFO] Coroutine function resumed\
+[INFO] Return value\
+[INFO] Final suspend\
+[INFO] Coroutine ended\
+[INFO] Destructor coroutine\
 
 As we can see in this log, the coroutine is stopped with the await ready and await suspend function. When at that point the coroutine is resumed again, it goes through the await resume function and then resumes the coroutine itself. Which is exactly as we would expect from the code that we made. The awaitable type is very versatile, but has to be tailored to suit the implementation.
 

@@ -625,21 +625,21 @@ cTestBench(VerilatedContext* context, bool traceActive) :
 
 Let's run our design with trace and debug output and see what happens.
 
-[DEBUG] CLOCK_H constructor(0) lvl=0 LowPeriod=4ns
-[DEBUG] CLOCK_H constructor(1) lvl=0 LowPeriod=7.5ns
-[DEBUG] CLOCK_H constructor(2) lvl=0 LowPeriod=5ns
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns
-[DEBUG] CLOCK_H(0) updateTime(4ns)
-[DEBUG] CLOCK_H(1) updateTime(4ns)
-[DEBUG] CLOCK_H(2) updateTime(4ns)
-[DEBUG] Loopcounter: 0
-[DEBUG] CLOCKMANAGER_H - tick()
-[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns
-[DEBUG] CLOCK_H(1) - getTimeToNextEvent:3.5ns
-[DEBUG] CLOCK_H(2) - getTimeToNextEvent:1000ps
+[DEBUG] CLOCK_H constructor(0) lvl=0 LowPeriod=4ns\
+[DEBUG] CLOCK_H constructor(1) lvl=0 LowPeriod=7.5ns\
+[DEBUG] CLOCK_H constructor(2) lvl=0 LowPeriod=5ns\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:7.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:5ns\
+[DEBUG] CLOCK_H(0) updateTime(4ns)\
+[DEBUG] CLOCK_H(1) updateTime(4ns)\
+[DEBUG] CLOCK_H(2) updateTime(4ns)\
+[DEBUG] Loopcounter: 0\
+[DEBUG] CLOCKMANAGER_H - tick()\
+[DEBUG] CLOCK_H(0) - getTimeToNextEvent:4ns\
+[DEBUG] CLOCK_H(1) - getTimeToNextEvent:3.5ns\
+[DEBUG] CLOCK_H(2) - getTimeToNextEvent:1000ps\
 [DEBUG] CLOCK_H(0) updateTime(1000ps)
 [DEBUG] CLOCK_H(1) updateTime(1000ps)
 [DEBUG] CLOCK_H(2) updateTime(1000ps)
