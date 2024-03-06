@@ -511,11 +511,7 @@ http://www.icce.rug.nl/documents/cplusplus/cplusplus24.html
 Full code example:
 
 ``` c++
-/**
- * @brief Template structure for a coroutine promise type
- * 
- * @tparam T 
- */
+
 template <typename T>
 struct sCoRoutineHandler
 {
@@ -525,8 +521,9 @@ struct sCoRoutineHandler
     //MUST include nested object type promise_type
     struct promise_type
     {
-        T _myValue;                       //!< This variable is accessible from the coroutine function
+        T _myValue;                     //!< This variable is accessible from the coroutine function
         std::exception_ptr _exception;  //!< Store exception pointer
+        //bool _finished = false;         //!< Boolean to keep track if the coroutine has finished
 
         /**
          * @brief Get the return object
@@ -567,13 +564,19 @@ struct sCoRoutineHandler
          * When final_suspend returns suspend_never then the object is automatically destroyed
          * When final_suspend returns suspend_always then the object's state remains accessible
          * 
-         * Do note that .done() cannot be called if the object is already destroyed
+         * Do note that .done() cannot be called if the object is already destroyed, therefore 
+         * we can keep track of the final suspend state with the boolean _finished.
          * 
-         * For testbenches destroying the object on completion is the correct approach
+         * For testbenches we will keep the state, so that we can get the result of a coroutine 
+         * at the end.
          * 
-         * @return suspend_never
+         * @return suspend_always
          */
-        suspend_never final_suspend() noexcept { return {}; }
+        suspend_always final_suspend() noexcept 
+        {
+            //_finished = true;
+            return {};
+        }
 
         /**
          * @brief unhandled exception
@@ -645,24 +648,33 @@ struct sCoRoutineHandler
      * @brief Destroy the coroutine object
      * @details This function destroys the object
      * 
-     * Since our final_suspend returns suspend_never the object is automatically destroyed, 
-     * so we don't have to do it
+     * Destroy the object if there is a object
      * 
      */
     ~sCoRoutineHandler()
     {
-
+        if(_h)
+        {
+            _h.destroy();
+        }
     }
 
     /**
      * @brief Check if the coroutine is done
+     * @details
+     * 
+     * This functions checks if the coroutine has finished, due that 
+     * final_suspend returns suspend_always we cannot call .done().
+     * Therefore the _finished is introduced in the promise type and 
+     * we can check accordingly.
      * 
      * @return true 
      * @return false 
      */
     explicit operator bool() 
     {
-        return _h.done();
+        return _h.done(); // Use this when final_suspend returns suspend_never
+        //return _h.promise()._finished; // Use this when final_suspend returns suspend_always
     }
 
     /**
@@ -681,9 +693,13 @@ struct sCoRoutineHandler
      * the coroutine. This can either be the result from 
      * co_yield as well as co_return.
      * 
+     * @attention When final_suspend returns suspend_always we cannot get 
+     * the value of the co_return expr. This value will then be changed, due
+     * that the promise is already deleted.
+     * 
      * @return T    Returns coroutine value or false when there is no value
      */
-    T getResult()
+    T getValue()
     {
         if (_h) 
         {

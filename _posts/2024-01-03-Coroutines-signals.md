@@ -1,11 +1,11 @@
 ---
 title: Generating signals with coroutines
-date: 2024-01-24
+date: 2024-03-01
 author: bschouteten
 ---
 
 # Signals with coroutines
-In the previous blog we started with generating signals, where we came to the conclusion that we needed coroutines for this. Following that we explored C++ 20 coroutines, investigating how they work and what they do. Now we have a stable starting point and can use this to generate signals into our simulation. As done in the previous blog, we will start with the reset signal, however now fully controlled by a coroutine and following this we will start generating some APB bus signals. 
+In the previous blog we started with generating signals, where we came to the conclusion that we needed coroutines for this. Following that we explored C++ 20 coroutines, investigating how they work and what they do. Now we have a stable starting point and can use this to generate signals into our simulation. As done in the previous blog, we will start with the reset signal, however now fully controlled by a coroutine. For the coroutine we will use the same code as provided in the previous blog at the end.
 
 # starting coroutine from a clock edge
 
@@ -143,18 +143,18 @@ So now we have added everything in the clock itself to suspend and resume a coro
 
 int cAPBUart16550TestBench::run()
 {
-    // loop 20 times
-    int i = 0;
-
     sCoRoutineHandler myTest = test();
 
     do
     {
-        i++;
         tick();
-    } while (!myTest && (i < 20));
+    } while (!myTest);
 
-    return 0;
+    tick();
+
+    INFO << "Test result:" << myTest.getResult() << "\n";
+
+    return myTest.getResult();
 }
 
 sCoRoutineHandler<bool> cAPBUart16550TestBench::test()
@@ -172,6 +172,20 @@ sCoRoutineHandler<bool> cAPBUart16550TestBench::test()
 
 ```
 
-TODO: Describe above functionality, 
-TODO: Rework above functionality since it needs to show one more clock pulse
-TODO: Check coroutine end returning, could be improved
+As we can see above, we have a simple run function, which uses a coroutine and runs as long as the coroutine is active. After that the coroutine is finished it will return the result of the coroutine. Keep in mind that we need to do one more tick when the coroutine is finished so that Verilator stores the latest state into our waveform file. Our coroutine itself doesn't do much, it just waits for 5 positive clock edges and then return true. If we now run this part and check the log, we can see that our coroutine has waited for 5 positive clock cycles and then returned true.
+
+[INFO] Setup test\
+[INFO] Coroutine resumed\
+[INFO] Coroutine resumed\
+[INFO] Coroutine resumed\
+[INFO] Coroutine resumed\
+[INFO] Coroutine resumed\
+[INFO] Coroutine return\
+[INFO] Test result:1
+
+Looking into the waveform, we can see that it has run for exactly 5 positive clock edges.
+
+![5 positive clock edges](/images/blog5/coroutine5PosEdges.png)
+
+# Generating a reset signal
+

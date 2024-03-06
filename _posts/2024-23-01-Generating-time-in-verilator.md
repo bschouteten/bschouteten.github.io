@@ -532,7 +532,7 @@ Hmmm, they all three start nicely as expected. However at 15ns we can see that o
 [DEBUG] CLOCK_H(2) - getTimeToNextEvent:4.03897e-10as\
 [DEBUG] CLOCK_H(0) updateTime(4.03897e-10as)\
 [DEBUG] CLOCK_H(1) updateTime(4.03897e-10as)\
-[DEBUG] CLOCK_H(2) updateTime(4.03897e-10as)\
+[DEBUG] CLOCK_H(2) updateTime(4.03897e-10as)
 
 Until loop counter 6 everything seems to go as expected, all clocks count down nicely and get the expected values. However from loop counter 6 we see that the time to next event for 50MHz is 4.03897e-10as, which is 0,0000000000000000000000000000403987 seconds. This is way smaller than our used accuracy of 1ps, it seems that we have rounding error in our calculation. Theoretically it should work but we are working with a PC simulation so it seems we have a rounding error in our system. 
 
@@ -722,7 +722,7 @@ Let's run our design with trace and debug output and see what happens.
 [DEBUG] CLOCK_H(2) - getTimeToNextEvent:1000ps\
 [DEBUG] CLOCK_H(0) updateTime(1000ps)\
 [DEBUG] CLOCK_H(1) updateTime(1000ps)\
-[DEBUG] CLOCK_H(2) updateTime(1000ps)\
+[DEBUG] CLOCK_H(2) updateTime(1000ps)
 
 Interesting part in our trace was at loopcounter 6, where we now nicely see that the very low timing is resolved. Meaning that our clocks now toggle at the expected moments, let's verify this with our tracing. We don't have a warning from verilator, so we expect it to function now.
 
