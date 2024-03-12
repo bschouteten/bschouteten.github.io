@@ -165,7 +165,7 @@ Alright so with this function we should now be able to read from our design thro
 
 # Coroutines
 
-As we identified previously it's difficult to control multiple signals simultaneously. In system Verilog many things can run in parallel, due that everything is clocked and handled according to this clock. In our general testbench we also have a very nice clock, so it would be very cool if we could mimic this parallelization in our testbench. Well it's mentioned earlier, threads. Using threads would be an option, creating a small thread for certain functionality and kill the thread when it ends. This would suit our APB read task in system Verilog very well, however in large designs we would then need to create and control many threads. That's not really what we want, making our design way to complex and difficult to handle. However the threading idea is not so bad, preferred a small subroutine which could be paused and continued on a clock edge or on finishing a action. C++ 20 has introduced something like this, coroutines. A coroutine can be described as "functions whose execution you can pause", this means we can write the functions almost the same as in system Verilog.
+As we identified previously it's difficult to control multiple signals simultaneously. In system Verilog many things can run in parallel, due that everything is clocked and handled according to this clock. In our general testbench we also have a very nice clock, so it would be very cool if we could mimic this parallelization. Well it's mentioned earlier, threads. Using threads would be an option, creating a small thread for certain functionality and kill the thread when it ends. This would suit our APB read task in system Verilog very well, however in large designs we would then need to create and control many threads. That's not really what we want, making our design way to complex and difficult to handle. However the threading idea is not so bad, preferred a small subroutine which could be suspended and resumed on a clock edge or on finishing a action. Lukily for us C++ 20 has introduced something like this, coroutines. A coroutine can be described as "functions whose execution you can pause", this means we can write the functions almost the same as in system Verilog.
 
 Let's take an example before we start to go deeper into subroutines. As we look into the function below, we can setup the signals just as in system Verilog. The execution of this function is stopped and it waits on a event of the clock before it continues execution. This is exactly how it works in system Verilog, so this would suit our testbench perfectly. Let's go and dig deeper into this and implement it properly.
 
@@ -192,9 +192,34 @@ uint32_t read(uint32_t address)
 
 ## Coroutines how does it work
 
-Coroutines are functions which can be suspended and will resume their execution at the exact same point as where it was suspended. All the needed data is not stored on the stack but in a specific heap memory element. When the execution is stopped it will return to the caller, it can from that point be started from multiple different locations or events. With this it is possible to mimic multithreading in a single threaded application. Using coroutines to drive the Verilator context is very helpful since Verilator is cycle based, so the different drivers can in that way work on the same cycle as that the Verilator driver works. Coroutines are newly introduced in C++20.
+Coroutines are very special functions and are quite complex to understand, let's try to work through them and see how it works. A C++ coroutine has two very special types, the ```promise_type``` and the ```awaitable```. Both need to work in conjunction with each other to get a functional coroutine. The ``` promise_type``` controls the internal state of the coroutine and defines what happens when the coroutine is suspended and resumed. The ```awaitable``` is used to support user dependend actions into the coroutine. There are two default ```awaitable``` types, which are ```suspend_never``` and ```suspend_always```. Both do exactly what they tell to do, one let's the operation continue and doesn't suspend the coroutine where the ```suspend_always``` will always suspend the coroutine. Coroutines are stackless data elements which are created in specific heap elements and also controlled from this point. It's important to know that there is no direct access to the data of the coroutine itself, this always has to happen through the ```promise_type```. A function will be defined as coroutine when one of the following definitions is used, ```co_await```, ```co_yield``` or ```co_return```. The compiler will recognize them and know that it needs to make a coroutine. At first it will look for the ```promise_type``` as we mentioned above. For now this seems to be very difficult to understand and see the relation between all of it, so let's start building it up and see how it works.
 
-A lot of small code snippets are shown below, those are for illustration purposes. They don't work on their own, usually they have a few things missing. Let's first start with how do we make a function a coroutine, this happens when one of the following definitions is used, ```co_await```, ```co_yield``` or ```co_return```. However this makes the function a coroutine, but for being able to have a coroutine we need a struct called ```promise_type```, this struct must hold a number of functions for the compiler to generate a coroutine for this. Let's look below and see the most simple example of a coroutine.
+A lot of small code snippets are shown below, those are for illustration purposes. They don't work on their own, usually they have a few things missing. Untill the paragraph of co_await, only the standard ```awaitable``` types of ```suspend_never``` and ```suspend_always``` are used.
+
+## co_return
+
+Let's start of with the most simple example of a coroutine and use the identifier ```co_return```. ```co_return``` is used to give a value back from a coroutine, it is the coroutine variant of ```return```. When ```co_return``` is added in the function, the compiler directly know that it is a coroutine and handle it accordingly. Let's make a simple function and add ```co_return```.
+
+``` c++
+void myCoroutine()
+{
+    co_return;
+}
+```
+
+As we try to compile this function our compiler will give us an error, "error: unable to find the promise type for this coroutine co_return;". The compiler has seen that we want to make a coroutine for this function, but as mentioned earlier we need the ```promise_type``` to build a coroutine. A ```promise_type``` is a structure which exists out of at least 5 mandatory functions. 
+
+At first the function ```get_return_object```, this will return the allocated heap memory object of the coroutine. This is needed to resume the coroutine but also to have access to the internal data, since the data of the corountine cannot be gotten in any other way.
+
+Second function is the ```initial_suspend```, this function returns a ```awaitable```. The creator can determine which ```awaitable``` is used, in most cases one of the standard awaitables is used. When ```suspend_always``` is called the coroutine will directly be suspended before the function even has started. ```suspend_never``` will let the coroutine run untill the first coroutine expression (```co_await```, ```co_yield``` or ```co_return```). In special cases the user can use it's own ```awaitable```.
+
+```final_suspend``` is the user-defined end part of the coroutine. Here lies the opportunity to execute special logic before returning back to the caller/resumer. This function returns just as ```initial_suspend``` a ```awaitable```, with this it can publish a result, signalling completion or resuming a different coroutine. It also gives the possibility to suspend the coroutine before destroying the frame. Which is important if we want to access the internal state of coroutine after completion.
+
+```void return_void``` or ``` void return_value``` has to be in place to return a valuye from the user. Which of both to use depends on the parameters given to ```co_return``` which we will describe just below.
+
+The last function is ```unhandled_exception```, it is called when an exception occurs within the context of a coroutine. So if the execution of the coroutine fails it will be called and the exception can stored/handled as by used wishes. It must be noted that using the coroutine after this can result in undefined behaviour and should be checked very carefully.
+
+Let's now put this together and build a ```promise_type``` to start with, following this we will extend and play around with the coroutine.
 
 ``` c++
 struct sCoRoutineHandler
@@ -208,21 +233,24 @@ struct sCoRoutineHandler
         void unhandled_exception() {}
     };
 };
+```
+In our example code we have wrapped the ```promise_type``` in the `sCoRoutineHandler`. With this we should be able to compile our previous function and run our first coroutine. There is just one small change needed to our previous function, instead of returning void we need to return the `sCoRoutineHandler`.
 
+``` c++
 sCoRoutineHandler myCoroutine()
 {
-    co_return; // Making the function a coroutine
+    co_return;
 }
 
 int main(int argc, char** argv) 
 {
-    sCoRoutineHandler myTask = myCoroutine();
+    sCoRoutineHandler myCoroutineHandle = coroutine();
     return 0;
 }
 
 ```
 
-We have now seen one of the main keywords to create a coroutine, which is the ```co_return```, it is used to complete execution of coroutine and return a value. Let's check how this part works and extend it to return a value and make sure that we cleanup our code correctly, while also explaining what the corresponding functions do. As first, we will expand our simple example and add some debug statements so we can follow the execution of the program. 
+We now have run our first coroutine, it compiled and our program works. We have now seen one of the main keywords to create a coroutine, which is ```co_return```, it is used to complete execution of coroutine and return a value. Let's check how this part works and extend it to return a value and make sure that we cleanup our code correctly, while also explaining what the corresponding functions do. As first, we will expand our simple example and add some debug statements so we can follow the execution of the program. 
 
 ``` C++
 struct sCoRoutineHandler
@@ -276,7 +304,7 @@ As we can see in the code example above, the ```promise_type``` is encapsulated 
 [INFO] Final suspend \
 [INFO] Destructor coroutine
 
-At first the function ```get_return_object``` is called, this will return the newly allocated heap memory object for the coroutine. Following this the constructor is called, with as parameter a handle to the coroutine itself, which we store in our structure, giving us access to the coroutine. The object is now created and ```initial_suspend``` is called, in our current design it returns ```suspend_never``` which means that our cororoutine function is executed until a ```co_await```, ```co_yield``` or ```co_return``` is used. The other case would be to return ```suspend_always```, suspending the coroutine function immediately. As we noted just before, after the initial suspend with ```suspend_never``` the coroutine function itself is called, visible by the coroutine function start statement. Since our function immediately returns with the ```co_return``` statement, it directly goes to the ```void return_void``` function, which is mandatory to have, without it's possible to have undefined behaviour. The last call of the coroutine goes to ```final_suspend```, this is the function for cleaning up the coroutine. In this example it has ```suspend_never``` as return parameter, the object is then automatically destroyed, where the state is not accessible anymore. Calling the coroutine after this point will lead into a segmentation fault. When the object's state has to be accessible after the coroutine finishes ```suspend_always``` must be used a return parameter. 
+First the ```promise_type``` will be created, as we can see in our log the coroutine function of ```get_return_object``` is called. At this point the heap memory for the coroutine state is already constructed. Our ```get_return_object``` returns the coroutine object itself, which is then passed into the constructor of our ```sCoRoutineHandler``` object. We can now store the handle to the coroutine so we have the possibility to access it if we want to. The constructor is also the second part which is called, followed by ```initial_suspend```. As mentioned before at this moment we determine if the coroutine is suspended directly, continued until a ```co_await```, ```co_yield``` or ```co_return``` is used or that it returns a special ```awaitable``` determined by the user. In our example we use ```suspend_never``` so the coroutine will start directly. This can also be noticed by our next statement of coroutine function start, we are now in the coroutine itself. Currently we don't do anything else then just returning by ```co_return```, so as soon as our coroutine is started it ends. Since our ```co_return``` statement doesn't return a value we have implemented ```void return_void```, which is the following function that is executed. As last the ``` final_suspend``` is called, in this case we return  the ```suspend_always``` `awaitable`. This will suspend the coroutine so that we still have access to it's internal state. As last we have the destructor of the encapsulating object, which is called since our main loop has finished and it destroys the object.
 
 Let's update ```initial_suspend``` and change the return parameter to ```suspend_always``` and re-run our example code. Since the coroutine is directly stopped we would expect that we don't see the coroutine function start and the corresponding function calls to close of the coroutine. Which indeed is true as we can see in the log:
 [INFO] Get coroutine return object\
@@ -284,34 +312,75 @@ Let's update ```initial_suspend``` and change the return parameter to ```suspend
 [INFO] Initial suspend\
 [INFO] Destructor coroutine
 
-Almost all function have now been explained and checked in which order they are called and executed, except the ```unhandled_exception```. Which is only called when an exception occurs within the context of a coroutine. So if the execution of the coroutine fails it will be called and the exception can stored/handled as by used wishes. It must be noted that using the coroutine after this can result in undefined behaviour and should be checked very carefully.
-
 Now let's return a value from our coroutine, we can do this by calling ```co_return expr```. But we also should adjust our ```promise_type``` and change the ```void return_void()``` function to ```void return_value(expr)```. It's a bit confusing but our function returns void, since it can't directly return the value to the caller. So we need to adjust the function accordingly and store the value in our structure. After the coroutine has then finished we can retrieve the value from it. Let's see how this works in the code.
 
 ``` C++
 
-// In our promise_type
-void return_value(int value) 
+struct sCoRoutineHandler
 {
-    INFO << "Return value\n";
-    _myReturnValue = value;
-}
+    struct promise_type
+    {
+        int _myReturnValue;
 
-// In the sCoroutineHandler
-int getReturnValue()
-{
-    return _handle.promise()._myReturnValue;
-}
+        sCoRoutineHandler get_return_object() 
+        {
+            INFO << "Get coroutine return object\n";
+            return sCoRoutineHandler{coroutine_handle<promise_type>::from_promise(*this)};
+        }
+        suspend_never initial_suspend() 
+        {   
+            INFO << "Initial suspend\n";
+            return{};
+        }
+        suspend_always final_suspend() noexcept 
+        { 
+            INFO << "Final suspend\n";
+            return {};
+        }
 
-// In main
+        void return_value(int value) 
+        {
+            INFO << "Return value\n";
+            _myReturnValue = value;
+        }
+
+        void unhandled_exception() {}
+    };
+
+    using handle_t = coroutine_handle<promise_type>;
+
+    //Handle to coroutine
+    handle_t _handle;
+
+    // Constructor
+    sCoRoutineHandler (handle_t handle) : _handle(handle) 
+    {
+        INFO << "Constructing coroutine\n";
+    };
+
+    ~sCoRoutineHandler()
+    {
+        INFO << "Destructing coroutine\n";
+    }
+
+    int getReturnValue()
+    {
+        return _handle.promise()._myReturnValue;
+    }
+};
+
 sCoRoutineHandler myCoroutine()
 {
     INFO << "Coroutine function start\n";
     co_return 5; // Coroutine
 }
 
-auto myTask = myCoroutine();
-INFO << "Coroutine return value: " << myTask.getReturnValue() << '\n';
+int main(int argc, char** argv) 
+{
+    auto myTask = myCoroutine();
+    INFO << "Coroutine return value: " << myTask.getReturnValue() << '\n';
+    return 0;
+}
 
 ```
 
@@ -325,23 +394,83 @@ As we run with the following code the following trace will be visible:
 [INFO] Coroutine return value: 5\
 [INFO] Destructor coroutine
 
-Visible here is that the return void is now replaced with return value and that we get the value from our coroutine and print it out. Do note that this must happen before the handler of the coroutine is destroyed.
+Here we can see very good why we have encapsulated the `promise_type`. Since we can't directly access the coroutine state, we need to store the handle to it and then call `promise()` to access it. This has been done in the `getReturnValue` function, in this way we access the `promise_type` variabele of _myReturnValue. But for this to work the coroutine still has to exist so therefore our `final_suspend` function returns `suspend_always`. If we would change this to `suspend_never` the coroutine state would already be destroyed and it would be undefined behaviour. Within this example we won't see any difference since the program doesn't do much. With this we have seen everything regarding the `co_return` expression and the basics of the `promise_type`.
 
 ## co_yield
 
-Let's explore the second coroutine expression ```co_yield expr```, which is used to suspend execution returning a value. This works in the same way as with our ```co_return expr``` example, the only difference here is that our coroutine can still resume. Meaning that we still need to request the value from our co_routine when it is suspended. As for the co_yield we also need to add another special function into our ```promise_type```, ```suspend_always yield_value(expr)```. When a ```co_yield expr``` is executed we will automatically end up in this function and can at that point process the data. The ```yield_value``` function must return ```suspend_always``` or ```suspend_never```, where it means the same as previously described. ```suspend_always``` will stop the coroutine and wait until it is resumed, where ```suspend_never``` will let the coroutine continue until the next coroutine expression. Let's try ```co_yield``` out with a simple example.
+Let's explore the second coroutine expression ```co_yield expr```, which is used to suspend execution returning a value. This works in the same way as with our ```co_return expr``` example, the only difference here is that our coroutine can still resume. Meaning that we still need to request the value from our co_routine when it is suspended. As for the co_yield we also need to add another special function into our ```promise_type```, ```suspend_always yield_value(expr)```. When a ```co_yield expr``` is executed we will automatically end up in this function and can at that point process the data. The ```yield_value``` function must return a `awaitable`, where ```suspend_always``` or ```suspend_never``` are the easiest. ```suspend_always``` will stop the coroutine and wait until it is resumed, where ```suspend_never``` will let the coroutine continue until the next coroutine expression. 
+
+Next to this we also need a way to resume a suspended coroutine, in our previous examples we only ended the coroutine. To resume a coroutine we need to call `resume()` on the handle of the coroutine. To make this happen we added a function `resume()` to our sCoRoutineHandler. When the coroutine is now suspended we can resume it by calling this function. Let's try this out with a simple example.
 
 ``` C++
-// The following is added in the promise_type
-suspend_always yield_value(int value)
+
+struct sCoRoutineHandler
 {
-    INFO << "Yield value " << value << '\n';
-    _myValue = value;
-    return {};
-}
+    struct promise_type
+    {
+        int _myValue;
+
+        sCoRoutineHandler get_return_object() 
+        {
+            INFO << "Get coroutine return object\n";
+            return sCoRoutineHandler{coroutine_handle<promise_type>::from_promise(*this)};
+        }
+        suspend_never initial_suspend() 
+        {   
+            INFO << "Initial suspend\n";
+            return{};
+        }
+        suspend_always final_suspend() noexcept 
+        { 
+            INFO << "Final suspend\n";
+            return {};
+        }
+
+        suspend_always yield_value(int value)
+        {
+            INFO << "Yield value " << value << '\n';
+            _myValue = value;
+            return {};
+        }
+
+        void return_value(int value) 
+        {
+            INFO << "Return value\n";
+            _myValue = value;
+        }
+
+        void unhandled_exception() {}
+    };
+
+    using handle_t = coroutine_handle<promise_type>;
+
+    //Handle to coroutine
+    handle_t _handle;
+
+    // Constructor
+    sCoRoutineHandler (handle_t handle) : _handle(handle) 
+    {
+        INFO << "Constructing coroutine\n";
+    };
+
+    ~sCoRoutineHandler()
+    {
+        INFO << "Destructing coroutine\n";
+    }
+
+    int getReturnValue()
+    {
+        return _handle.promise()._myReturnValue;
+    }
+
+    void resume()
+    {
+        _handle.resume();
+    }
+};
 
 // Our coroutine is adjusted to the following:
-sCoRoutineHandler myCoroutine()
+sCoRoutineHandler coroutine()
 {
     INFO << "Coroutine function start\n";
     co_yield 1;
@@ -368,7 +497,7 @@ int main(int argc, char** argv)
 
 ```
 
-Running this function we would expect that our coroutine is started and then yields with the value of 1, where our main routine takes over and prints the value of the first yield. Following this the coroutine is resumed again and it will suspend with the value of 2. At last main takes over again and prints out the value, resuming the coroutine for the last time and printing the return value. This is also our first example which shows the power and especially the readines of a coroutine.
+If we look into our coroutine we can see that it starts, then we suspend the operation by calling `co_yield` and passing in the value of 1. So our coroutine is now suspended and it's internal value is set to 1. Due that our coroutine is suspended the main function is running again and it will get the value from the coroutine, print this out and resume the coroutine. The same thing happens again, now only with the value of 2. At the end it returns with `co_return` as we have seen previously. 
 
 Trace of the simple co_yield example:
 [INFO] Get coroutine return object\
@@ -385,9 +514,26 @@ Trace of the simple co_yield example:
 [INFO] Coroutine return value: 5\
 [INFO] Destructor coroutine
 
+In the trace we can see that the program does exactly what we want it do. It starts the coroutine and the coroutine runs until the first `co_yield` statement. We retrieve this value, print it and then let the coroutine resume. So from the coroutine perspective, `co_yield` is called, which transfers to the function `yield_value`. Here we store the passed value into our internal state. The main routine takes over and requests the value of our coroutine, which we can get through the `promise()`. Then the coroutine is resumed and the same things happens again, only now with the value of 2. Ending the coroutine with `co_return`.
+
 ## co_await
 
-```co_await``` is used to suspend execution untill the coroutine is resumed. As parameter it takes a awaitable type, where we already have seen two of those, ```suspend_never``` and ```suspend_always```. Let's try out with those two first and then dive deeper into the awaitables and see what it means. In our function we change ```co_yield 1;``` to ```co_await suspend_always{};```, which will give us the following log:
+```co_await {awaitable}``` is used to suspend execution untill the coroutine is resumed. As parameter it takes a `awaitable` type, we have already seen two of those, ```suspend_never``` and ```suspend_always```. Let's start with those two first and then dive deeper into the `awaitable` type and see what it means. 
+
+First we will adjust our previous example which we used for the `co_yield` example. In our coroutine the first `co_yield` is adjusted to `co_await suspend_always{};`, by doing this we will suspend the coroutine. This happens due that we pass in `suspend_always`, meaning that the coroutine must suspend. It does not pass any value into the coroutine, so `yield_value` is not called and our internal value is not updated. Let's run this and see what our log produces.
+
+``` c++
+sCoRoutineHandler coroutine()
+{
+    INFO << "Coroutine function start\n";
+    co_await suspend_always{};
+
+    INFO << "Coroutine function resumed\n";
+    co_yield 2;
+    
+    co_return 5; // Coroutine
+}
+```
 
 [INFO] Get coroutine return object\
 [INFO] Constructing coroutine\
@@ -402,9 +548,10 @@ Trace of the simple co_yield example:
 [INFO] Coroutine return value: 5\
 [INFO] Destructor coroutine
 
-As we can see in our log, the yield_value function is not called and the value is not set, therefore we now see a value of 0. So the coroutine is just paused without giving any value back. If we now do the same, but instead of ```co_await suspend_always{};``` we use ```co_await suspend_never{}``` we will see that the coroutine is not stopped by the ```co_await``` since it should never suspend. 
+As we can see in our log, the yield_value function is not called and the value is not set, therefore we now see a value of 0. So the coroutine is just suspended without giving any value. All other parts are still exactly the same as with the `co_yield` example. If we now do the same, but instead of ```co_await suspend_always{};``` we use ```co_await suspend_never{}``` we will see that the coroutine is not stopped by the ```co_await``` since it should never suspend. This means that the coroutine is suspended at the point of `co_yield 2` and we therefore only need one resume call before the coroutine ends.
 
-When we now run this, a segmentation fault will come up. This comes due that we delete the coroutine before it has ended, however why would we want to call ```co_await``` when we don't want to suspend, currently there is no reason for this.
+What happens if we still run it with the two resume calls, a segmentation fault will come up. This comes due that the coroutine is already finished and we still try to resume it, which leads into undefined behaviour and in this case perticular into a segmentation fault.
+
 [INFO] Get coroutine return object\
 [INFO] Constructing coroutine\
 [INFO] Initial suspend\
@@ -418,8 +565,7 @@ When we now run this, a segmentation fault will come up. This comes due that we 
 make[1]: *** [Makefile:78: sim] Segmentation fault\
 make: *** [Makefile:108: verilator] Error 2
 
-We have now seen a basic part of the ```co_await``` with the already known awaitable types. However there is more behind the awaitable, let's explore this and see how it works. 
-The awaitable type is about the same as our ```promise_type``` which we have seen previously for our coroutine. Just as the ```promise_type```, the awaitable type is also a special interface just for coroutines. It exists out of three functions, ```await_ready(), await_suspend(coroutine_handle) and await_resume()```.
+We have now seen a basic part of the ```co_await``` with the already known `awaitable` types. As programmers we can also create our own `awaitable` and have the coroutine suspend on this. Just as the `promise_type` the `awaitable` exists out of a few functions which must be implemented, ```await_ready(), await_suspend(coroutine_handle) and await_resume()```.
 
 ``` C++
 struct awaitable
@@ -435,9 +581,15 @@ struct awaitable
 }
 ```
 
-Let's see what those functions exactly mean and what they do. When ```co_await``` is called it will first call the ```await_ready()``` function of the awaitable type. This is the place where the coroutine can determine if it suspends or not. This is done by the return type, when ```true``` is returned it means that the coroutine can continue without suspending. When ```false``` is returned the coroutine should be suspended. A example for this is cached data, inside the ```await_ready()``` it could be checked if certain data is already cached, when this is the case there is no need to suspend the function, it can be continued directly.
+`await_ready` is used to check if the coroutine should be suspended or that it can continue, in the context of this function the coroutine is not yet suspended. Best way to explain this is to use a example, let's say we need to read data from memory. Our coroutine initiates a read to the memory and suspends itself until the data has been fetched. But in the case that the data is cached, there is no need to be suspended. The coroutine however doesn't have any knowledge about this, it only handles the coroutine state. Well here we would need a special `awaitable` which has the knowledge about the reading the data from memory. The `await_ready` function can then check if the data which is needed is cached, if this is the case it can return `true` and the coroutine will not be suspended. When the data has to be fetched from memory it will return `false` and the coroutine is suspended.
 
-When ```await_ready()``` determineds that the coroutine must suspend, the compiler will kick in and suspend the coroutine. Following this it calls the ```await_suspend``` with the coroutine handle. Within this function the coroutine is suspended and we can now kick off any related operation. The return value determines the behaviour of the function, when a coroutine handle is returned it will automatically resume that coroutine, this can be the own coroutine handle but also a handle to a different coroutine. When nothing is returned the coroutine will be kept in the suspended state. It's also possible to do the same as for the ```await_ready()``` function, return a boolean, where ```false``` will resume the coroutine and ```true``` will keep the coroutine suspended. Last function is the ```await_resume()```, which should return the result of the awaitable, what the exact return type is depends on the implementation. Let's take a look into a simple example and follow the trace of execution.
+Next to `await_ready` we have `await_suspend`. `await_suspend` will be called when the coroutine is set into the suspended state. It will receive the handle to the coroutine as parameter, with this we can store the handle and resume it later on. How to use `await_suspend` depends heavily on the implementation.
+
+When the coroutine eventually gets resumed, the `await_resume` function will be called just before the resume point. This function will then return the result of the `co_await` expression.
+
+The `awaitable` type is more or less a bridge between system logic and coroutine handle. The user can use system events to control the suspending and resuming of the coroutine, all by placing certain logic elements in the `awaitable` type. Let's look at a example and see what we mention above.
+
+Let's add it into our example with some log statements and run the code to see how the execution works. 
 
 ``` C++
 struct awaitable
@@ -460,7 +612,7 @@ struct awaitable
     }
 }
 
-sCoRoutineHandler myCoroutine()
+sCoRoutineHandler coroutine()
 {
     INFO << "Coroutine function start\n";
     co_await awaitable{};
@@ -470,17 +622,15 @@ sCoRoutineHandler myCoroutine()
 
 int main(int argc, char** argv) 
 {
-    auto myTask = myCoroutine();
+    auto myCoroutineHandle = coroutine();
     
     INFO << "Resume coroutine \n";
-    myTask.resume();    
+    myCoroutineHandle.resume();    
     INFO << "Coroutine ended \n";
     return 0;    
 }
 
 ```
-
-As we run this code we will see the following output in our terminal (keep in mind that we still have some output in our coroutine itself):
 
 [INFO] Get coroutine return object\
 [INFO] Constructing coroutine\
@@ -496,7 +646,116 @@ As we run this code we will see the following output in our terminal (keep in mi
 [INFO] Coroutine ended\
 [INFO] Destructor coroutine
 
-As we can see in this log, the coroutine is stopped with the await ready and await suspend function. When at that point the coroutine is resumed again, it goes through the await resume function and then resumes the coroutine itself. Which is exactly as we would expect from the code that we made. The awaitable type is very versatile, but has to be tailored to suit the implementation.
+As we can see in this log, the coroutine is stopped with the await ready and await suspend function. When at that point the coroutine is resumed again, it goes through the await resume function and then resumes the coroutine itself. Which is exactly as we would expect from the code that we made. 
+
+The nice thing about the `awaitable` type is that every class/structure can become one, we just need to add in the three functions. Those functions do have access to the internal state of the class/structure and can execute specific functionality. In the following part we will explore this a bit.
+
+## Waiting on a different coroutine
+
+Now we have seen how the coroutine mechanics work, let's bring it together and create a coroutine which waits on completion by a different coroutine. As we now know, we need a `awaitable` for the `co_await` operator. So by extending our sCoRoutineHandler with those three functions we make it an `awaitable`, let's try this and see what happens. 
+
+``` c++
+// Note that part of the code is removed
+struct sCoRoutineHandler
+{
+    struct promise_type
+    {
+        int _myValue;
+        coroutine_handle<> waitingCoroutine;
+
+        suspend_always final_suspend() noexcept 
+        { 
+            INFO << "Final suspend\n";
+            return {};
+        }
+    };
+
+    void resume()
+    {
+        _handle.resume();
+    }
+
+    bool await_ready()
+    {
+        return false;
+    }
+
+    void await_suspend(std::coroutine_handle<> h)
+    {
+        _h.promise().waitingCoroutine = h;
+    }
+
+    auto await_resume()
+    {
+        return std::move(_h.promise()._myValue);
+    }
+};
+```
+
+In this case we want to always suspend when entering this coroutine, so therefore our `await_ready` function returns false. `await_suspend` passes the handle of the calling coroutine, which is the coroutine we want to resume when our current coroutine is finished. Since we want to resume the coroutine we also need to store it's handle, which we do inside the `await_suspend` function. The handle is stored within the `promise_type` so that the coroutine has access to it and can resume it. The `await_resume` will return the result of the operation, which in our case is stored inside `_myValue`. By returning this we return the result of the coroutine.
+
+Now it's possible to suspend our coroutine waiting on a different coroutine to finish, but we still need to resume our coroutine when the coroutine is finished. As we have seen we also added `waitingCoroutine` in our `promise_type`, so we just have to start the waiting coroutine again. This can be done by changing the `final_suspend` function.
+
+``` c++
+auto final_suspend() noexcept 
+{
+    struct awaiter
+    {
+        coroutine_handle<> waitingCoroutine;
+        bool await_ready() const noexcept { return false;}
+        void await_resume() const noexcept {}
+
+        coroutine_handle<> await_suspend(coroutine_handle<promise_type> h) const noexcept
+        {
+            return waitingCoroutine ? waitingCoroutine : std::noop_coroutine();
+        }
+    };
+
+    return awaiter{waitingCoroutine}; 
+}
+```
+
+Previously we have seen that `final_suspend` returns a `awaitable`, this `awaitable` determines what happens. `suspend_never` cleared the coroutine handle, where `suspend_always` suspended the coroutine and we had to manually clear it. In this case we return a special `awaitable` depending if there is any waiting coroutine. When we return a suspended coroutine it will automatically be resumed, which is exactly what we use in this case. In case there is no waiting coroutine we return noop_coroutine(), which translates to a special coroutine handle that has no-op `resume` and `destroy` method. If a coroutine suspends and returns the `noop_coroutine()` handle from `await_suspend`, this indicates that there is no more coroutine to resume and that the function should return to it's caller.
+
+The last part now is to add this into our example code.
+
+``` c++
+sCoRoutineHandler secondCoroutine()
+{
+    INFO << "Second coroutine function start\n";
+    co_yield 2;
+    INFO << "Second coroutine function resume\n";
+    co_return 10;
+}
+
+sCoRoutineHandler secondRoutineHandler = secondCoroutine();
+
+sCoRoutineHandler coroutine()
+{
+    INFO << "Coroutine function start\n";
+    int result = co_await secondRoutineHandler;
+    INFO << "Coroutine function returned: " << result << "\n";    
+    co_return 5; // Coroutine
+}
+
+int main(int argc, char** argv) 
+{
+    sCoRoutineHandler myCoroutineHandle = coroutine();
+
+    secondRoutineHandler.resume();    
+
+    INFO << "Coroutine return value: " << myCoroutineHandle.getValue() << '\n';
+}
+
+```
+
+In this example we let our `coroutine` function waits on our `secondCoroutine`. Since our `secondCoroutine` needs to be resumed we have this as a global handle, this would normally be done by some specific logic, however this shows how it works. We start the first coroutine which starts the second coroutine, the second coroutine is suspended by the co_yield and we return back to `main`. In `main` we resume the second handle, which at that point returns 10 and resumes the first coroutine. This then prints the return value and returns itself. With this we end our example, print out the return value and the program exits. As we can see in the log:
+
+[INFO] Coroutine function start\
+[INFO] Second coroutine function start\
+[INFO] Second coroutine function resume\
+[INFO] Coroutine function returned: 10\
+[INFO] Coroutine return value: 5
 
 We now went through the basics of a C++ coroutine. There are a lot of possibilities with them and there is more to explore, however with those basics we can go forward and start implementing it into out Verilator related code, which we will start with in our next blog. For now this is the end of this blog, if you want to read more on coroutines check the following links which are very helpful.
 
@@ -512,6 +771,11 @@ Full code example:
 
 ``` c++
 
+/**
+ * @brief Template structure for a coroutine promise type
+ * 
+ * @tparam T 
+ */
 template <typename T>
 struct sCoRoutineHandler
 {
@@ -523,6 +787,7 @@ struct sCoRoutineHandler
     {
         T _myValue;                     //!< This variable is accessible from the coroutine function
         std::exception_ptr _exception;  //!< Store exception pointer
+        coroutine_handle<> waitingCoroutine;
         //bool _finished = false;         //!< Boolean to keep track if the coroutine has finished
 
         /**
@@ -558,11 +823,18 @@ struct sCoRoutineHandler
         /**
          * @brief final suspend
          * @details This function is called at the end of a coroutine, it is used
-         * to cleanup the coroutine. Depending on it's return type it will either 
-         * automatically destroy the coroutine or the user must handle the destroy by itself.
+         * to cleanup the coroutine. It always returns a awaitable type, where it has 
+         * predefined behaviour for the standard awaitables.
          * 
          * When final_suspend returns suspend_never then the object is automatically destroyed
          * When final_suspend returns suspend_always then the object's state remains accessible
+         * 
+         * It's also possible to return a own awaitable, which is the case in this function,
+         * it checks if there is a waiting coroutine. If this is the case we return the 
+         * waiting coroutine, which is at this point resumed again. If there is no waiting
+         * coroutine we return noop_coroutine, this is a special coroutine handle that has
+         * no resume or destroy method, indicating to the coroutine that there is nothing 
+         * to resume and it should return to it's caller.
          * 
          * Do note that .done() cannot be called if the object is already destroyed, therefore 
          * we can keep track of the final suspend state with the boolean _finished.
@@ -570,12 +842,23 @@ struct sCoRoutineHandler
          * For testbenches we will keep the state, so that we can get the result of a coroutine 
          * at the end.
          * 
-         * @return suspend_always
+         * @return auto
          */
-        suspend_always final_suspend() noexcept 
+        auto final_suspend() noexcept 
         {
-            //_finished = true;
-            return {};
+            struct awaiter
+            {
+                coroutine_handle<> waitingCoroutine;
+                bool await_ready() const noexcept { return false;}
+                void await_resume() const noexcept {}
+
+                coroutine_handle<> await_suspend(coroutine_handle<promise_type> h) const noexcept
+                {
+                    return waitingCoroutine ? waitingCoroutine : std::noop_coroutine();
+                }
+            };
+            
+            return awaiter{waitingCoroutine}; 
         }
 
         /**
@@ -710,39 +993,62 @@ struct sCoRoutineHandler
             return false;
         }
     }
-};
 
-struct awaitable
-{
+    /**
+     * @brief The await ready function for the awaitable type
+     * 
+     * @return false    Always return false to suspend the coroutine
+     */
     bool await_ready()
     {
-        std::cout << "Await ready\n";
         return false;
     }
 
-    // one of:
-    auto await_suspend(coroutine_handle<> handle)
+    /**
+     * @brief The await suspend function for the awaitable type
+     * @details This function suspends the coroutine and implements
+     * the needed logic. It stores the passed coroutine handle into the
+     * waitingCoroutine handle of our current promise type.
+     * 
+     * This can then be used to resume the coroutine that called co_await
+     * 
+     * @param h     The coroutine handle which calls the co_await
+     */
+    void await_suspend(std::coroutine_handle<> h)
     {
-        // Perform any waiting action
-        std::cout << "Await suspend\n";
+        _h.promise().waitingCoroutine = h;
     }
-    // bool await_suspend(coroutine_handle<>){}
-    // coroutine_handle<> await_suspend(coroutine_handle<>){}
 
+    /**
+     * @brief The await resume function for the awaitable type
+     * @details This function is called when the coroutine is resumed again
+     * It will return the result of the coroutine, which is placed in 
+     * the promise type.
+     * 
+     * @return auto     Returns the result of the coroutine
+     */
     auto await_resume()
     {
-        std::cout << "Await resume\n";
+        return std::move(_h.promise()._myValue);
     }
 };
 
-sCoRoutineHandler<int> myCoroutine()
+
+sCoRoutineHandler<int> secondCoroutine()
 {
-    std::cout << "Coroutine function start\n";
-    co_await awaitable{};
-    //int waitedValue = 
-    co_yield 3;
-    //INFO << "Waited value: " << waitedValue << "\n";
-    std::cout << "Coroutine function resumed\n";    
+    INFO << "Second coroutine function start\n";
+    co_yield 2;
+    INFO << "Second coroutine function resume\n";
+    co_return 10;
+}
+
+sCoRoutineHandler secondRoutineHandler = secondCoroutine();
+
+sCoRoutineHandler<int> coroutine()
+{
+    INFO << "Coroutine function start\n";
+    int result = co_await secondRoutineHandler;
+    INFO << "Coroutine function returned: " << result << "\n";    
     co_return 5; // Coroutine
 }
 
@@ -755,15 +1061,11 @@ int main(int argc, char** argv)
 
     setupLogger();
 
-    auto myTask = myCoroutine();
+    sCoRoutineHandler myCoroutineHandle = coroutine();
 
-    std::cout << "Resume coroutine \n";
-    myTask.resume();
+    secondRoutineHandler.resume();    
 
-    std::cout << "Coroutine suspended with value " << myTask.getValue() << '\n';
-    myTask.resume(); 
-    
-    std::cout << "Coroutine ended with value" <<  myTask.getResult() << "\n";
+    INFO << "Coroutine return value: " << myCoroutineHandle.getValue() << '\n';
 }
 
 ```
