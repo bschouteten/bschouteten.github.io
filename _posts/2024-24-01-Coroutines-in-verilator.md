@@ -759,13 +759,13 @@ In this example we let our `coroutine` function waits on our `secondCoroutine`. 
 
 We now went through the basics of a C++ coroutine. There are a lot of possibilities with them and there is more to explore, however with those basics we can go forward and start implementing it into out Verilator related code, which we will start with in our next blog. For now this is the end of this blog, if you want to read more on coroutines check the following links which are very helpful.
 
-https://lewissbaker.github.io/2017/11/17/understanding-operator-co-await \
-https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/coroutines-c++20/#awaiters \
-https://itnext.io/c-20-coroutines-complete-guide-7c3fc08db89d \
-https://maharajan-ses.medium.com/c-coroutine-deep-dive-dd3fc0d57708 \
-https://ggulgulia.medium.com/painless-c-coroutines-part-4-69117214bfdc \
-https://en.cppreference.com/w/cpp/language/coroutines \
-http://www.icce.rug.nl/documents/cplusplus/cplusplus24.html
+[https://lewissbaker.github.io/2017/11/17/understanding-operator-co-await] \
+[https://www.chiark.greenend.org.uk/~sgtatham/quasiblog/coroutines-c++20/#awaiters] \
+[https://itnext.io/c-20-coroutines-complete-guide-7c3fc08db89d] \
+[https://maharajan-ses.medium.com/c-coroutine-deep-dive-dd3fc0d57708] \
+[https://ggulgulia.medium.com/painless-c-coroutines-part-4-69117214bfdc] \
+[https://en.cppreference.com/w/cpp/language/coroutines] \
+[http://www.icce.rug.nl/documents/cplusplus/cplusplus24.html]
 
 Full code example:
 
