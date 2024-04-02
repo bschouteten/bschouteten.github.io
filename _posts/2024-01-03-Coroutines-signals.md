@@ -65,14 +65,14 @@ sCoRoutineHandler<bool> cAPBUart16550TestBench::test()
 
 ```
 
-Generating the reset goes in a similar way as in the `test` routine where we wait for the clock edges. At the beginning we directly set our reset pin 'low', following this we `co_await` the negative edge of our clock. In our sequence diagram we waited for two clock edges, which is a bit different now, where we wait for 5 negative edges. When the 5 negative edges have passed we set the reset signal 'high' and wait for 5 more negative clock edges. When those are passed we set the reset signal back to 'low' and return from our coroutine.
+Generating the reset goes in a similar way as in the `test` routine where we wait for the clock edges. At the beginning we directly set our reset pin 'high', following this we `co_await` the negative edge of our clock. In our sequence diagram we waited for two clock edges, which is a bit different now, where we wait for 5 negative edges. When the 5 negative edges have passed we set the reset signal 'low' and wait for 5 more negative clock edges. When those are passed we set the reset signal back to 'high' and return from our coroutine.
 
 ``` c++
 
 sCoRoutineHandler<bool> cAPBUart16550TestBench::generateReset()
 {
     INFO << "Generate reset \n";
-    _core->PRESETn = 0;
+    _core->PRESETn = 1;
 
     for(uint8_t i = 0; i < 5; i++)
     {
@@ -80,14 +80,14 @@ sCoRoutineHandler<bool> cAPBUart16550TestBench::generateReset()
     }
 
     INFO << "Reset set high \n";
-    _core->PRESETn = 1;
+    _core->PRESETn = 0;
 
     for(uint8_t i = 0; i < 5; i++)
     {
         co_await cClockAwaitable(pclk, eClockEdge::negative);        
     }
 
-    _core->PRESETn = 0;
+    _core->PRESETn = 1;
     INFO << "Reset done \n";
     co_return true;
 }
@@ -258,3 +258,5 @@ In our log it visible that the code exactly does as we expect. First `test` is s
 Looking into the waveform, we can see that the reset is generated and following the reset we waited for 5 positive clock edges.
 
 ![Reset](/images/blog5/reset.png)
+
+We have now updated our run routine and created our first small test program. This test program uses a reset which is triggered according to the negative clock edge. In our next blog we will take a look into creating bus signals, more specifically APB bus signals. 
